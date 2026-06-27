@@ -547,31 +547,54 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
         margin: const EdgeInsets.only(right: 12),
         child: Column(
           children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isSelected
-                      ? theme.colorScheme.primary
-                      : Colors.transparent,
-                  width: 2,
-                ),
-              ),
-              child: CircleAvatar(
-                backgroundColor:
-                    theme.colorScheme.secondaryContainer.withValues(alpha: 0.5),
-                child: Text(
-                  fav.name.isNotEmpty
-                      ? fav.name[0].toUpperCase()
-                      : '?',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSecondaryContainer,
+            Stack(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected
+                          ? theme.colorScheme.primary
+                          : Colors.transparent,
+                      width: 2,
+                    ),
+                  ),
+                  child: CircleAvatar(
+                    backgroundColor: theme.colorScheme.secondaryContainer
+                        .withValues(alpha: 0.5),
+                    child: Text(
+                      fav.name.isNotEmpty ? fav.name[0].toUpperCase() : '?',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSecondaryContainer,
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                if (isSelected)
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: GestureDetector(
+                      onTap: _shareRequest,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: theme.colorScheme.surface, width: 2),
+                        ),
+                        child: const Icon(
+                          Icons.send,
+                          size: 12,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(height: 4),
             Text(
@@ -685,11 +708,17 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                       ],
                     ),
                   ),
-                  Radio<String>(
-                    value: name,
-                    groupValue: _selectedContactName,
-                    onChanged: (val) => _selectContact(val),
-                  ),
+                  if (isSelected)
+                    IconButton(
+                      icon: Icon(Icons.send, color: theme.colorScheme.primary),
+                      onPressed: _shareRequest,
+                    )
+                  else
+                    Radio<String>(
+                      value: name,
+                      groupValue: _selectedContactName,
+                      onChanged: (val) => _selectContact(val),
+                    ),
                 ],
               ),
             ),

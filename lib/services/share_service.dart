@@ -95,6 +95,20 @@ class ShareService {
     final message = buildWhatsAppMessage(request);
     final mobile = request.contactNumber ?? '';
 
+    try {
+      final qrFile = await generateQrCodeFile(request);
+      if (qrFile != null) {
+        await Share.shareXFiles(
+          [XFile(qrFile.path)],
+          text: message,
+          subject: 'Pay Request - ${request.merchantName}',
+        );
+        return;
+      }
+    } catch (e) {
+      // Fallback if QR generation fails
+    }
+
     if (mobile.isNotEmpty) {
       final cleanedMobile = mobile.replaceAll(RegExp(r'[^\d]'), '');
       final waUrl =
@@ -108,19 +122,10 @@ class ShareService {
     }
 
     try {
-      final qrFile = await generateQrCodeFile(request);
-      if (qrFile != null) {
-        await Share.shareXFiles(
-          [XFile(qrFile.path)],
-          text: message,
-          subject: 'Pay Request - ${request.merchantName}',
-        );
-      } else {
-        await Share.share(
-          message,
-          subject: 'Pay Request - ${request.merchantName}',
-        );
-      }
+      await Share.share(
+        message,
+        subject: 'Pay Request - ${request.merchantName}',
+      );
     } on PlatformException {
       rethrow;
     }
