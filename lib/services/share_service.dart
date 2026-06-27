@@ -4,6 +4,7 @@ import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
 import 'package:qr/qr.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/payment_request.dart';
 
 class ShareService {
@@ -74,22 +75,49 @@ class ShareService {
 
   static Future<void> shareOnWhatsApp(PaymentRequest request) async {
     final message = buildWhatsAppMessage(request);
+    final mobile = request.contactNumber ?? '';
 
-    try {
+    if (mobile.isNotEmpty) {
+      final cleaned = mobile.replaceAll(RegExp(r'[^\d+]'), '');
       final qrFile = await generateQrCodeFile(request);
+
       if (qrFile != null) {
+        try {
+          const channel = MethodChannel('com.payrequest/share');
+          await channel.invokeMethod('shareToWhatsApp', {
+            'phone': cleaned,
+            'text': message,
+            'imagePath': qrFile.path,
+          });
+          return;
+        } catch (_) {
+          // Platform channel failed, fall through
+        }
+      }
+
+      final waUrl = 'https://wa.me/$cleaned?text=${Uri.encodeComponent(message)}';
+      final uri = Uri.parse(waUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        return;
+      }
+    }
+
+    // No contact or no QR: system share sheet
+    final qrFile = await generateQrCodeFile(request);
+    if (qrFile != null) {
+      try {
         await Share.shareXFiles(
           [XFile(qrFile.path)],
           text: message,
           subject: 'Pay Request - ${request.merchantName}',
         );
         return;
+      } catch (e) {
+        // Fallback if QR generation fails
       }
-    } catch (e) {
-      // Fallback if QR generation fails
     }
 
-    // Default fallback to text-only sharing if QR fails
     try {
       await Share.share(
         message,

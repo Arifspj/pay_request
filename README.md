@@ -40,3 +40,13 @@ flutter pub get
 flutter run
 flutter build apk --release
 ```
+
+### Troubleshooting Build Failures
+
+If you encounter Gradle file locks or Kotlin daemon errors (especially on Windows with multi-drive setups):
+
+1. **Stop Gradle Daemons:** `.\gradlew --stop` (inside the `android` folder)
+2. **Clean Project:** `flutter clean`
+3. **Rebuild:** `flutter build apk --release --no-shrink`
+
+Note: The APK is typically generated at `android/app/build/outputs/apk/release/app-release.apk`.

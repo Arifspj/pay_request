@@ -16,6 +16,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _db = DatabaseHelper();
   List<PaymentRequest> _requests = [];
   bool _loading = true;
+  bool _showAllRequests = false;
 
   @override
   void initState() {
@@ -51,18 +52,21 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
-          children: [
-            const SizedBox(height: 16),
-            _buildHeroBanner(theme),
-            const SizedBox(height: 32),
-            _buildRecentRequests(theme),
-            const SizedBox(height: 32),
-            _buildIllustrationBanner(theme),
-            const SizedBox(height: 32),
-            _buildQuickActions(theme),
-          ],
+        child: RefreshIndicator(
+          onRefresh: _loadRequests,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+            children: [
+              const SizedBox(height: 16),
+              _buildHeroBanner(theme),
+              const SizedBox(height: 32),
+              _buildRecentRequests(theme),
+              const SizedBox(height: 32),
+              _buildIllustrationBanner(theme),
+              const SizedBox(height: 32),
+              _buildQuickActions(theme),
+            ],
+          ),
         ),
       ),
     );
@@ -149,6 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildRecentRequests(ThemeData theme) {
+    final displayCount = _showAllRequests ? _requests.length : (_requests.length > 3 ? 3 : _requests.length);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -163,18 +168,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: theme.colorScheme.onSurface,
               ),
             ),
-            TextButton(
-              onPressed: () {},
-              child: Text(
-                'View All',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.05,
-                  color: theme.colorScheme.primary,
+            if (!_showAllRequests && _requests.length > 3)
+              TextButton(
+                onPressed: () => setState(() => _showAllRequests = true),
+                child: Text(
+                  'More...',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.05,
+                    color: theme.colorScheme.primary,
+                  ),
                 ),
               ),
-            ),
           ],
         ),
         const SizedBox(height: 12),
@@ -189,7 +195,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _buildEmptyState(theme)
         else
           ...List.generate(
-            _requests.length > 5 ? 5 : _requests.length,
+            displayCount,
             (i) => _buildRequestCard(theme, _requests[i]),
           ),
       ],
@@ -240,7 +246,14 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: () {},
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => CreateRequestScreen(existingRequest: request),
+              ),
+            );
+          },
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -282,7 +295,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       request.amount > 0
                           ? '₹${request.amount.toStringAsFixed(2)}'
-                          : 'No amount',
+                          : '-',
                       style: TextStyle(
                         fontSize: request.amount > 0 ? 16 : 12,
                         fontWeight: FontWeight.bold,
@@ -444,8 +457,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }

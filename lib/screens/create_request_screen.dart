@@ -244,7 +244,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
           child: ElevatedButton.icon(
             onPressed: _shareRequest,
             icon: const Icon(Icons.ios_share),
-            label: const Text('Share Payment Request'),
+            label: const Text('Share'),
           ),
         ),
       ),
