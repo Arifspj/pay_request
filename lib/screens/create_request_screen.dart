@@ -1,0 +1,743 @@
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
+import 'package:permission_handler/permission_handler.dart';
+import '../database/database_helper.dart';
+import '../models/payment_request.dart';
+import '../models/favorite.dart';
+import '../services/share_service.dart';
+import 'scan_qr_screen.dart';
+
+class CreateRequestScreen extends StatefulWidget {
+  final String? upiId;
+  final String? merchantName;
+  final PaymentRequest? existingRequest;
+  final bool autoShare;
+
+  const CreateRequestScreen({
+    super.key,
+    this.upiId,
+    this.merchantName,
+    this.existingRequest,
+    this.autoShare = false,
+  });
+
+  @override
+  State<CreateRequestScreen> createState() => _CreateRequestScreenState();
+}
+
+class _CreateRequestScreenState extends State<CreateRequestScreen> {
+  final _db = DatabaseHelper();
+  final _picker = ImagePicker();
+
+  final _amountController = TextEditingController();
+  String? _invoicePath;
+  List<Favorite> _favorites = [];
+  List<Contact> _contacts = [];
+  List<Contact> _filteredContacts = [];
+  String? _selectedContactName;
+  String? _selectedContactNumber;
+  bool _loadingContacts = false;
+  final _contactSearchController = TextEditingController();
+
+  late String _upiId;
+  late String _merchantName;
+
+  @override
+  void initState() {
+    super.initState();
+    _upiId = widget.upiId ?? widget.existingRequest?.upiId ?? '';
+    _merchantName =
+        widget.merchantName ?? widget.existingRequest?.merchantName ?? '';
+
+    if (widget.existingRequest != null) {
+      _amountController.text =
+          widget.existingRequest!.amount.toStringAsFixed(0);
+      _invoicePath = widget.existingRequest!.invoicePath;
+      _selectedContactName = widget.existingRequest!.contactName;
+      _selectedContactNumber = widget.existingRequest!.contactNumber;
+    }
+
+    _loadFavorites();
+    _loadContacts();
+    _contactSearchController.addListener(_filterContacts);
+
+    if (widget.autoShare && widget.existingRequest != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _shareRequest();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _contactSearchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadFavorites() async {
+    final favs = await _db.getFavorites();
+    if (mounted) setState(() => _favorites = favs);
+  }
+
+  Future<void> _loadContacts() async {
+    final status = await Permission.contacts.request();
+    if (!status.isGranted) return;
+
+    setState(() => _loadingContacts = true);
+    try {
+      final contacts = await FlutterContacts.getAll(
+        properties: {ContactProperty.phone},
+      );
+      if (mounted) {
+        setState(() {
+          _contacts = contacts
+              .where((c) =>
+                  c.phones.isNotEmpty &&
+                  c.displayName != null &&
+                  c.displayName!.isNotEmpty)
+              .toList();
+          _filteredContacts = List.from(_contacts);
+          _loadingContacts = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _loadingContacts = false);
+    }
+  }
+
+  void _filterContacts() {
+    final query = _contactSearchController.text.toLowerCase().trim();
+    setState(() {
+      if (query.isEmpty) {
+        _filteredContacts = List.from(_contacts);
+      } else {
+        _filteredContacts = _contacts.where((c) {
+          final name = c.displayName?.toLowerCase() ?? '';
+          final phone = c.phones.isNotEmpty ? c.phones.first.number : '';
+          return name.contains(query) || phone.contains(query);
+        }).toList();
+      }
+    });
+  }
+
+  void _selectContact(String? name) {
+    if (name == null) return;
+    final contact = _contacts.firstWhere(
+      (c) => c.displayName == name,
+      orElse: () => Contact(phones: [], emails: [], addresses: [],
+          organizations: [], websites: [], socialMedias: [], events: [],
+          relations: [], notes: []),
+    );
+    setState(() {
+      _selectedContactName = name;
+      _selectedContactNumber =
+          contact.phones.isNotEmpty ? contact.phones.first.number : '';
+    });
+  }
+
+  void _scanQRAgain() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ScanQRScreen()),
+    );
+  }
+
+  Future<void> _pickInvoice(ImageSource source) async {
+    final xfile = await _picker.pickImage(
+      source: source,
+      maxWidth: 1200,
+      maxHeight: 1200,
+    );
+    if (xfile != null) {
+      setState(() => _invoicePath = xfile.path);
+    }
+  }
+
+  Future<void> _shareRequest() async {
+    if (_upiId.isEmpty) {
+      _showSnackBar('UPI ID is required');
+      return;
+    }
+
+    final amountText = _amountController.text.trim();
+    final amount = amountText.isNotEmpty ? double.tryParse(amountText) : null;
+    if (amountText.isNotEmpty && (amount == null || amount <= 0)) {
+      _showSnackBar('Please enter a valid amount');
+      return;
+    }
+
+    final request = PaymentRequest(
+      merchantName: _merchantName,
+      upiId: _upiId,
+      amount: amount ?? 0,
+      invoicePath: _invoicePath,
+      contactName: _selectedContactName,
+      contactNumber: _selectedContactNumber,
+      status: 'Shared',
+    );
+
+    await _db.insertRequest(request);
+
+    try {
+      await ShareService.shareOnWhatsApp(request);
+      _showSnackBar('Request shared successfully!');
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      _showSnackBar('Failed to share: $e');
+    }
+  }
+
+  void _showSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text('Create Request'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.info_outline),
+            onPressed: () {},
+          ),
+          IconButton(
+            icon: const Icon(Icons.account_circle),
+            onPressed: () {},
+          ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          // Merchant Info
+          _buildMerchantCard(theme),
+          const SizedBox(height: 24),
+          // Amount
+          _buildAmountSection(theme),
+          const SizedBox(height: 24),
+          // Invoice
+          _buildInvoiceSection(theme),
+          const SizedBox(height: 24),
+          // Favorites
+          _buildFavoritesSection(theme),
+          const SizedBox(height: 16),
+          // Contacts
+          _buildContactsSection(theme),
+          const SizedBox(height: 100),
+        ],
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: ElevatedButton.icon(
+            onPressed: _shareRequest,
+            icon: const Icon(Icons.ios_share),
+            label: const Text('Share Payment Request'),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMerchantCard(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'MERCHANT',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.05,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _merchantName.isEmpty ? 'Enter merchant name' : _merchantName,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    color: _merchantName.isEmpty
+                        ? theme.colorScheme.outline
+                        : theme.colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _upiId.isEmpty ? 'Scan QR to auto-fill' : _upiId,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: theme.colorScheme.outline,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.verified,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAmountSection(ThemeData theme) {
+    return Column(
+      children: [
+        Text(
+          'ENTER AMOUNT',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.05,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '₹',
+              style: TextStyle(
+                fontSize: 40,
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 180,
+              child: TextField(
+                controller: _amountController,
+                keyboardType: TextInputType.number,
+                textAlign: TextAlign.center,
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  hintText: '0',
+                  hintStyle: TextStyle(
+                    fontSize: 40,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                style: TextStyle(
+                  fontSize: 40,
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.qr_code_scanner, size: 28),
+              onPressed: () => _scanQRAgain(),
+              tooltip: 'Scan QR again',
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          height: 4,
+          width: 96,
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInvoiceSection(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Invoice Details',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildInvoiceButton(
+                context,
+                icon: Icons.photo_camera,
+                label: 'Camera',
+                onTap: () => _pickInvoice(ImageSource.camera),
+                theme: theme,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildInvoiceButton(
+                context,
+                icon: Icons.image,
+                label: 'Gallery',
+                onTap: () => _pickInvoice(ImageSource.gallery),
+                theme: theme,
+              ),
+            ),
+          ],
+        ),
+        if (_invoicePath != null) ...[
+          const SizedBox(height: 12),
+          Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.file(
+                  File(_invoicePath!),
+                  height: 120,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: CircleAvatar(
+                  backgroundColor: Colors.black54,
+                  radius: 16,
+                  child: IconButton(
+                    icon: const Icon(Icons.close, size: 16, color: Colors.white),
+                    onPressed: () => setState(() => _invoicePath = null),
+                    padding: EdgeInsets.zero,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildInvoiceButton(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    required ThemeData theme,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: theme.colorScheme.outlineVariant,
+              width: 2,
+              style: BorderStyle.solid,
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(icon, color: theme.colorScheme.primary, size: 32),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFavoritesSection(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Favorite Contacts',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+            TextButton(
+              onPressed: () {},
+              child: const Text(
+                'VIEW ALL',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.05,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 90,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: [
+              ..._favorites.map((fav) => _buildFavoriteAvatar(fav, theme)),
+              _buildAddFavoriteAvatar(theme),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFavoriteAvatar(Favorite fav, ThemeData theme) {
+    final isSelected = _selectedContactName == fav.name;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedContactName = fav.name;
+          _selectedContactNumber = fav.mobile;
+        });
+      },
+      child: Container(
+        width: 72,
+        margin: const EdgeInsets.only(right: 12),
+        child: Column(
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected
+                      ? theme.colorScheme.primary
+                      : Colors.transparent,
+                  width: 2,
+                ),
+              ),
+              child: CircleAvatar(
+                backgroundColor:
+                    theme.colorScheme.secondaryContainer.withValues(alpha: 0.5),
+                child: Text(
+                  fav.name.isNotEmpty
+                      ? fav.name[0].toUpperCase()
+                      : '?',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onSecondaryContainer,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              fav.name,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddFavoriteAvatar(ThemeData theme) {
+    return Container(
+      width: 72,
+      margin: const EdgeInsets.only(right: 12),
+      child: Column(
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: theme.colorScheme.surfaceContainerHigh,
+            ),
+            child: const Icon(Icons.add, color: Colors.grey),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Add New',
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContactsSection(ThemeData theme) {
+    final contactWidgets = _filteredContacts.take(20).map((contact) {
+      final name = contact.displayName ?? 'Unknown';
+      final phone = contact.phones.isNotEmpty
+          ? contact.phones.first.number
+          : '';
+      final initials = name
+          .split(' ')
+          .map((n) => n.isNotEmpty ? n[0] : '')
+          .take(2)
+          .join();
+      final isSelected = _selectedContactName == name;
+
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Material(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () {
+              setState(() {
+                _selectedContactName = name;
+                _selectedContactNumber = phone;
+              });
+            },
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isSelected
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
+                ),
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: isSelected
+                        ? theme.colorScheme.secondaryContainer
+                        : theme.colorScheme.surfaceContainerHigh,
+                    child: Text(
+                      initials,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: isSelected
+                            ? theme.colorScheme.onSecondaryContainer
+                            : theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(name,
+                            style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: theme.colorScheme.onSurface)),
+                        Text(phone,
+                            style: TextStyle(
+                                fontSize: 14,
+                                color: theme.colorScheme.outline)),
+                      ],
+                    ),
+                  ),
+                  Radio<String>(value: name),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'PHONE CONTACTS',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.05,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        TextField(
+          controller: _contactSearchController,
+          decoration: InputDecoration(
+            hintText: 'Search contacts by name or number...',
+            prefixIcon: const Icon(Icons.search, size: 20),
+            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (_loadingContacts)
+          const Center(child: CircularProgressIndicator())
+        else if (_contacts.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(24),
+            child: Center(
+              child: Text(
+                'No contacts found. Grant contact permission.',
+                style: TextStyle(color: theme.colorScheme.outline),
+              ),
+            ),
+          )
+        else
+          RadioGroup<String>(
+            groupValue: _selectedContactName,
+            onChanged: (val) => _selectContact(val),
+            child: Column(children: contactWidgets),
+          ),
+      ],
+    );
+  }
+}
+
