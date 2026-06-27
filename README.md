@@ -1,16 +1,42 @@
-# pay_request
+# Pay Request
 
-A new Flutter project.
+A Flutter mobile app to scan UPI QR codes, create payment requests with optional invoice attachments, and share them via WhatsApp or other apps.
 
-## Getting Started
+## Features
 
-This project is a starting point for a Flutter application.
+- **QR Scanning** — Scan any UPI-compatible QR code to auto-fill merchant name and UPI ID
+- **Payment Requests** — Enter amount, attach invoice image, select contact, and generate UPI payment links
+- **Share via WhatsApp** — Direct WhatsApp sharing with formatted UPI payment links
+- **Favorites** — Save frequently-used contacts from your device address book for quick access
+- **Payment History** — Locally stored request history with status badges (Pending / Shared / Completed)
+- **Export History** — Export all payment requests as a text file
+- **Dark Mode** — Toggle between light and dark themes (persisted across sessions)
+- **Default Share App** — Choose preferred sharing channel (WhatsApp, Telegram, Email, or System)
 
-A few resources to get you started if this is your first Flutter project:
+## Screens
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+| Screen | Description |
+|--------|-------------|
+| Home | Hero banner, recent requests, quick actions (Scan QR, Contact, Self, Balance) |
+| Favorites | Saved contacts from address book with add/remove support |
+| Settings | Dark mode toggle, default share app picker, export history, about |
+| Scan QR | Camera-based UPI QR code scanner |
+| Create Request | Form to compose and share payment requests |
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Tech Stack
+
+- **Framework:** Flutter (Dart)
+- **State Management:** Provider
+- **Database:** SQLite (sqflite)
+- **QR Scanning:** mobile_scanner
+- **Contacts:** flutter_contacts
+- **Image Pickup:** image_picker
+- **Sharing:** share_plus, url_launcher
+
+## Build
+
+```sh
+flutter pub get
+flutter run
+flutter build apk --release
+```
