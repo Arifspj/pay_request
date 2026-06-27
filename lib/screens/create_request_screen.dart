@@ -685,7 +685,11 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                       ],
                     ),
                   ),
-                  Radio<String>(value: name),
+                  Radio<String>(
+                    value: name,
+                    groupValue: _selectedContactName,
+                    onChanged: (val) => _selectContact(val),
+                  ),
                 ],
               ),
             ),
@@ -731,11 +735,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
             ),
           )
         else
-          RadioGroup<String>(
-            groupValue: _selectedContactName,
-            onChanged: (val) => _selectContact(val),
-            child: Column(children: contactWidgets),
-          ),
+          Column(children: contactWidgets),
       ],
     );
   }
