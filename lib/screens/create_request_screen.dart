@@ -384,6 +384,8 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
   }
 
   Widget _buildAmountSection(ThemeData theme) {
+    final presets = [50, 100, 200, 500, 1000, 2000];
+
     return Column(
       children: [
         Text(
@@ -443,6 +445,47 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
           decoration: BoxDecoration(
             color: theme.colorScheme.primary.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 40,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            itemCount: presets.length,
+            separatorBuilder: (context, index) => const SizedBox(width: 10),
+            itemBuilder: (context, index) {
+              final preset = presets[index];
+              return ChoiceChip(
+                label: Text('₹$preset'),
+                selected: _amountController.text == preset.toString(),
+                onSelected: (selected) {
+                  if (selected) {
+                    setState(() {
+                      _amountController.text = preset.toString();
+                    });
+                  }
+                },
+                backgroundColor: theme.colorScheme.surface,
+                selectedColor: theme.colorScheme.primaryContainer,
+                labelStyle: TextStyle(
+                  color: _amountController.text == preset.toString()
+                      ? theme.colorScheme.onPrimaryContainer
+                      : theme.colorScheme.onSurface,
+                  fontWeight: FontWeight.w600,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(
+                    color: _amountController.text == preset.toString()
+                        ? Colors.transparent
+                        : theme.colorScheme.outlineVariant,
+                  ),
+                ),
+                showCheckmark: false,
+              );
+            },
           ),
         ),
       ],

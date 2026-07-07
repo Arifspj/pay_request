@@ -6,25 +6,26 @@ A Flutter mobile app to scan UPI QR codes, create payment requests with optional
 
 - **QR Scanning** — Scan any UPI-compatible QR code to auto-fill merchant name and UPI ID
 - **Floating Scan Button** — Quick-access QR scanner from the home screen
+- **Quick Amount Presets** — Tap predefined amounts (₹50, ₹100, etc.) to instantly set the payment value
 - **Payment Requests** — Enter amount, attach invoice image, select contact, and generate UPI payment links
 - **Share via WhatsApp** — Direct WhatsApp sharing with formatted UPI payment links, QR code, and invoice attachments
-- **Smart Category** — Remembers your last used category for faster request creation
-- **Sidebar Navigation** — Easy access to all app pages via a sliding drawer
-- **Favorites** — Save frequently-used contacts from your device address book for quick access
+- **Enhanced Category UI** — Select from a grid of standard expense categories with descriptive icons and colors (Bottom Sheet)
+- **Global Statistics** — Real-time expense tracking across all requests, visualized with category-wise breakdowns in the sidebar
+- **Favorites & Starring** — Save contacts from your device address book and "Star" them for quick access
 - **Payment History** — Locally stored request history with status badges (Pending / Shared / Completed)
 - **Export History** — Export all payment requests as a text file
-- **Dark Mode** — Toggle between light and dark themes (persisted across sessions)
+- **Dark Mode** — Toggle between light and dark themes with a refined "Deep Blue" palette
 - **Default Share App** — Choose preferred sharing channel (WhatsApp, Telegram, Email, or System)
 
 ## Screens
 
 | Screen | Description |
-|--------|-------------|
-| Home | Dashboard with stats (Total/Paid/Pending), Sidebar navigation, and Scan QR FAB |
-| Favorites | Saved contacts from address book with add/remove support |
-| Settings | Dark mode toggle, default share app picker, export history, about |
-| Scan QR | Camera-based UPI QR code scanner |
-| Create Request | Form to compose and share payment requests |
+| :--- | :--- |
+| **Home** | Dashboard with live global stats, sidebar navigation, and quick-scan FAB |
+| **Favorites** | Contact management with starring support for quick payment access |
+| **Settings** | App preferences, Dark Mode toggle, history export, and about info |
+| **Scan QR** | High-performance camera-based UPI QR code scanner |
+| **Create Request** | Advanced request composer with category picker, invoice attachment, and contact integration |
 
 ## Tech Stack
 

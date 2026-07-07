@@ -418,6 +418,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildRequestCard(ThemeData theme, PaymentRequest request) {
+    final catItem = expenseCategories.firstWhere(
+      (c) => c.name == request.category,
+      orElse: () => expenseCategories.last,
+    );
+
     Color statusColor;
     Color statusBg;
     switch (request.status) {
@@ -463,7 +468,15 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             child: Row(
               children: [
-                _buildMerchantIcon(request.merchantName, theme),
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: catItem.color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(catItem.icon, size: 24, color: catItem.color),
+                ),
                 if (request.invoicePath != null && request.invoicePath!.isNotEmpty) ...[
                   const SizedBox(width: 4),
                   _buildInvoicePreviewButton(request, theme),
@@ -497,7 +510,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Text(
                       request.amount > 0
-                          ? '₹${request.amount.toStringAsFixed(2)}'
+                          ? '₹${request.amount.toStringAsFixed(0)}'
                           : '-',
                       style: TextStyle(
                         fontSize: request.amount > 0 ? 16 : 12,
