@@ -59,9 +59,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () {},
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
         ),
         title: const Text('Pay Request'),
         actions: [
@@ -78,6 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+      drawer: _buildDrawer(context, theme),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _loadRequests,
@@ -97,6 +100,94 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ScanQRScreen()),
+        ),
+        icon: const Icon(Icons.qr_code_scanner),
+        label: const Text('Scan QR'),
+        backgroundColor: theme.colorScheme.primary,
+        foregroundColor: Colors.white,
+      ),
+    );
+  }
+
+  Widget _buildDrawer(BuildContext context, ThemeData theme) {
+    return Drawer(
+      child: Column(
+        children: [
+          DrawerHeader(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary,
+            ),
+            child: const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircleAvatar(
+                    radius: 30,
+                    backgroundColor: Colors.white,
+                    child: Icon(Icons.payments, size: 30),
+                  ),
+                  SizedBox(height: 12),
+                  Text(
+                    'Pay Request',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.home),
+            title: const Text('Home'),
+            onTap: () => Navigator.pop(context),
+          ),
+          ListTile(
+            leading: const Icon(Icons.qr_code_scanner),
+            title: const Text('Scan QR'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ScanQRScreen()),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.add_circle_outline),
+            title: const Text('Create Request'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const CreateRequestScreen()),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.star_border),
+            title: const Text('Favorites'),
+            onTap: () {
+              Navigator.pop(context);
+              // In MainShell, this would be index 1
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.settings),
+            title: const Text('Settings'),
+            onTap: () {
+              Navigator.pop(context);
+            },
+          ),
+        ],
       ),
     );
   }

@@ -67,6 +67,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
 
     _loadFavorites();
     _loadContacts();
+    _loadLastCategory();
     _contactSearchController.addListener(_filterContacts);
 
     if (widget.autoShare && widget.existingRequest != null) {
@@ -91,6 +92,15 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
       setState(() {
         _favorites = favs;
         _merchantFavorites = merchantFavs;
+      });
+    }
+  }
+
+  Future<void> _loadLastCategory() async {
+    final lastCat = await _db.getSetting('last_category');
+    if (mounted && lastCat != null && _selectedCategory.isEmpty) {
+      setState(() {
+        _selectedCategory = lastCat;
       });
     }
   }
@@ -197,6 +207,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
     );
 
     await _db.insertRequest(request);
+    await _db.setSetting('last_category', _selectedCategory);
     if (_merchantName.isNotEmpty && _upiId.isNotEmpty) {
       await _db.upsertMerchantFavorite(_merchantName, _upiId, _selectedCategory);
     }

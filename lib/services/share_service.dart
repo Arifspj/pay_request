@@ -94,6 +94,7 @@ class ShareService {
             'phone': cleaned,
             'text': message,
             'imagePath': qrFile.path,
+            'invoicePath': request.invoicePath ?? '',
           });
           return;
         } catch (_) {

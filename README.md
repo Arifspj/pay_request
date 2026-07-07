@@ -5,8 +5,11 @@ A Flutter mobile app to scan UPI QR codes, create payment requests with optional
 ## Features
 
 - **QR Scanning** — Scan any UPI-compatible QR code to auto-fill merchant name and UPI ID
+- **Floating Scan Button** — Quick-access QR scanner from the home screen
 - **Payment Requests** — Enter amount, attach invoice image, select contact, and generate UPI payment links
-- **Share via WhatsApp** — Direct WhatsApp sharing with formatted UPI payment links
+- **Share via WhatsApp** — Direct WhatsApp sharing with formatted UPI payment links, QR code, and invoice attachments
+- **Smart Category** — Remembers your last used category for faster request creation
+- **Sidebar Navigation** — Easy access to all app pages via a sliding drawer
 - **Favorites** — Save frequently-used contacts from your device address book for quick access
 - **Payment History** — Locally stored request history with status badges (Pending / Shared / Completed)
 - **Export History** — Export all payment requests as a text file
@@ -17,7 +20,7 @@ A Flutter mobile app to scan UPI QR codes, create payment requests with optional
 
 | Screen | Description |
 |--------|-------------|
-| Home | Stats card (Total/Paid/Pending), recent requests, quick actions |
+| Home | Dashboard with stats (Total/Paid/Pending), Sidebar navigation, and Scan QR FAB |
 | Favorites | Saved contacts from address book with add/remove support |
 | Settings | Dark mode toggle, default share app picker, export history, about |
 | Scan QR | Camera-based UPI QR code scanner |
