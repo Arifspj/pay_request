@@ -101,15 +101,14 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const ScanQRScreen()),
         ),
-        icon: const Icon(Icons.qr_code_scanner),
-        label: const Text('Scan QR'),
         backgroundColor: theme.colorScheme.primary,
         foregroundColor: Colors.white,
+        child: const Icon(Icons.qr_code_scanner),
       ),
     );
   }
