@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:share_plus/share_plus.dart';
+import 'legal_screen.dart';
 import '../database/database_helper.dart';
 import '../services/theme_provider.dart';
 
@@ -353,17 +353,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _openPrivacyPolicy() async {
-    final uri = Uri.parse(_privacyUrl);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const LegalScreen(
+          title: 'Privacy Policy',
+          content: LegalContent.privacyPolicy,
+        ),
+      ),
+    );
   }
 
   Future<void> _openTerms() async {
-    final uri = Uri.parse(_termsUrl);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const LegalScreen(
+          title: 'Terms & Conditions',
+          content: LegalContent.termsAndConditions,
+        ),
+      ),
+    );
   }
 
   void _showAbout() {

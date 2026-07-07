@@ -192,6 +192,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildStatsCard(ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
     final totalAmount = _requests.fold(0.0, (sum, r) => sum + r.amount);
     final paidAmount = _requests
         .where((r) => r.status == 'Paid')
@@ -203,17 +204,20 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            theme.colorScheme.primary,
-            theme.colorScheme.primary.withValues(alpha: 0.8),
-          ],
+          colors: isDark
+              ? [const Color(0xFF002A66), const Color(0xFF00174B)]
+              : [
+                  theme.colorScheme.primary,
+                  theme.colorScheme.primary.withValues(alpha: 0.8),
+                ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: theme.colorScheme.primary.withValues(alpha: 0.3),
+            color: (isDark ? Colors.black : theme.colorScheme.primary)
+                .withValues(alpha: 0.3),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -632,6 +636,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildIllustrationBanner(ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
@@ -651,19 +656,21 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         child: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  theme.colorScheme.primary,
-                  const Color(0xFF1E3A5F),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: isDark
+                      ? [const Color(0xFF003EA8), const Color(0xFF00174B)]
+                      : [
+                          theme.colorScheme.primary,
+                          const Color(0xFF1E3A5F),
+                        ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
               ),
             ),
-          ),
           Positioned(
             right: -40,
             top: -40,

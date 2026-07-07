@@ -106,47 +106,111 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       appBar: AppBar(
         title: const Text('Favorites'),
       ),
-      body: _favorites.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.star_outline,
-                    size: 64,
-                    color: theme.colorScheme.outline,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No favorite contacts yet',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: theme.colorScheme.onSurfaceVariant,
+      body: Column(
+        children: [
+          _buildFavoritesStats(theme),
+          Expanded(
+            child: _favorites.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.star_outline,
+                          size: 64,
+                          color: theme.colorScheme.outline,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No favorite contacts yet',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton.icon(
+                          onPressed: _addFavorite,
+                          icon: const Icon(Icons.person_add),
+                          label: const Text('Add Contact'),
+                        ),
+                      ],
                     ),
+                  )
+                : ListView(
+                    padding: const EdgeInsets.all(20),
+                    children: [
+                      ..._favorites
+                          .map((fav) => _buildFavoriteCard(fav, theme)),
+                      const SizedBox(height: 12),
+                      Center(
+                        child: TextButton.icon(
+                          onPressed: _addFavorite,
+                          icon: const Icon(Icons.add),
+                          label: const Text('Add Contact'),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  TextButton.icon(
-                    onPressed: _addFavorite,
-                    icon: const Icon(Icons.person_add),
-                    label: const Text('Add Contact'),
-                  ),
-                ],
-              ),
-            )
-          : ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                ..._favorites.map((fav) => _buildFavoriteCard(fav, theme)),
-                const SizedBox(height: 12),
-                Center(
-                  child: TextButton.icon(
-                    onPressed: _addFavorite,
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add Contact'),
-                  ),
-                ),
-              ],
-            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFavoritesStats(ThemeData theme) {
+    return Container(
+      margin: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.primary.withValues(alpha: 0.1),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _statCol(theme, 'Total', _favorites.length.toString(), Icons.people),
+          Container(
+            height: 40,
+            width: 1,
+            color: theme.colorScheme.outlineVariant,
+          ),
+          _statCol(theme, 'Active', _favorites.length.toString(), Icons.bolt),
+          Container(
+            height: 40,
+            width: 1,
+            color: theme.colorScheme.outlineVariant,
+          ),
+          _statCol(theme, 'Starred', '0', Icons.star),
+        ],
+      ),
+    );
+  }
+
+  Widget _statCol(ThemeData theme, String label, String value, IconData icon) {
+    return Column(
+      children: [
+        Icon(icon, color: theme.colorScheme.primary, size: 20),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: theme.colorScheme.outline,
+          ),
+        ),
+      ],
     );
   }
 
