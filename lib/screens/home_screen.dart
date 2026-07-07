@@ -114,80 +114,171 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildDrawer(BuildContext context, ThemeData theme) {
+    final totalAmount = _requests.fold(0.0, (sum, r) => sum + r.amount);
+    final categoryMap = <String, double>{};
+    for (var r in _requests) {
+      final cat = r.category ?? 'Other';
+      categoryMap[cat] = (categoryMap[cat] ?? 0.0) + r.amount;
+    }
+    final sortedCategories = categoryMap.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
     return Drawer(
       child: Column(
         children: [
-          DrawerHeader(
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.only(top: 60, bottom: 20, left: 20, right: 20),
             decoration: BoxDecoration(
-              color: theme.colorScheme.primary,
-            ),
-            child: const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircleAvatar(
-                    radius: 30,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.payments, size: 30),
-                  ),
-                  SizedBox(height: 12),
-                  Text(
-                    'Pay Request',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+              gradient: LinearGradient(
+                colors: [
+                  theme.colorScheme.primary,
+                  theme.colorScheme.primary.withValues(alpha: 0.8),
                 ],
               ),
             ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.payments,
+                    color: theme.colorScheme.primary,
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Pay Request',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  'Manage your UPI requests',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
           ),
-          ListTile(
-            leading: const Icon(Icons.home),
-            title: const Text('Home'),
-            onTap: () => Navigator.pop(context),
-          ),
-          ListTile(
-            leading: const Icon(Icons.qr_code_scanner),
-            title: const Text('Scan QR'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ScanQRScreen()),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.add_circle_outline),
-            title: const Text('Create Request'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const CreateRequestScreen()),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.star_border),
-            title: const Text('Favorites'),
-            onTap: () {
-              Navigator.pop(context);
-              // In MainShell, this would be index 1
-            },
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                const SizedBox(height: 12),
+                _drawerTile(Icons.home, 'Home', () => Navigator.pop(context), theme),
+                _drawerTile(Icons.qr_code_scanner, 'Scan QR', () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ScanQRScreen()),
+                  );
+                }, theme),
+                const Divider(indent: 20, endIndent: 20),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  child: Text(
+                    'STATISTICS',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.primary,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ),
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHigh,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Total Spent',
+                              style: TextStyle(fontWeight: FontWeight.w500)),
+                          Text('₹${totalAmount.toStringAsFixed(0)}',
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 16)),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      ...sortedCategories.take(3).map((cat) {
+                        final percent = totalAmount > 0 ? cat.value / totalAmount : 0.0;
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(cat.key, style: const TextStyle(fontSize: 12)),
+                                  Text('₹${cat.value.toStringAsFixed(0)}',
+                                      style: const TextStyle(
+                                          fontSize: 12, fontWeight: FontWeight.w600)),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              LinearProgressIndicator(
+                                value: percent,
+                                backgroundColor: theme.colorScheme.outlineVariant,
+                                color: theme.colorScheme.primary,
+                                borderRadius: BorderRadius.circular(2),
+                                minHeight: 4,
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                _drawerTile(Icons.star_border, 'Favorites', () => Navigator.pop(context), theme),
+                _drawerTile(Icons.settings_outlined, 'Settings', () => Navigator.pop(context), theme),
+              ],
+            ),
           ),
           const Divider(),
-          ListTile(
-            leading: const Icon(Icons.settings),
-            title: const Text('Settings'),
-            onTap: () {
-              Navigator.pop(context);
-            },
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Text(
+              'Version 1.0.0',
+              style: TextStyle(color: theme.colorScheme.outline, fontSize: 12),
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _drawerTile(IconData icon, String title, VoidCallback onTap, ThemeData theme) {
+    return ListTile(
+      leading: Icon(icon, color: theme.colorScheme.onSurfaceVariant),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: theme.colorScheme.onSurface,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      onTap: onTap,
+      dense: true,
     );
   }
 
