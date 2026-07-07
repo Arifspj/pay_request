@@ -65,5 +65,9 @@ hs_err_pid*.log
 *.iml
 pay_request.iml
 
+# Keystore & signing
+android/key.jks
+android/key.properties
+
 # OS
 app_icon*.png

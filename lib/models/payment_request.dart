@@ -6,7 +6,9 @@ class PaymentRequest {
   final String? invoicePath;
   final String? contactName;
   final String? contactNumber;
-  final String status; // Pending, Shared, Completed
+  final String status; // Pending, Shared, Paid, Cancelled
+  final String? category;
+  final String? remarks;
   final DateTime createdAt;
 
   PaymentRequest({
@@ -18,6 +20,8 @@ class PaymentRequest {
     this.contactName,
     this.contactNumber,
     this.status = 'Pending',
+    this.category,
+    this.remarks,
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
@@ -31,6 +35,8 @@ class PaymentRequest {
       'contact_name': contactName ?? '',
       'contact_number': contactNumber ?? '',
       'status': status,
+      'category': category ?? '',
+      'remarks': remarks ?? '',
       'created_at': createdAt.toIso8601String(),
     };
   }
@@ -45,6 +51,8 @@ class PaymentRequest {
       contactName: map['contact_name'] as String?,
       contactNumber: map['contact_number'] as String?,
       status: map['status'] as String? ?? 'Pending',
+      category: map['category'] as String?,
+      remarks: map['remarks'] as String?,
       createdAt: DateTime.parse(map['created_at'] as String),
     );
   }
@@ -58,6 +66,8 @@ class PaymentRequest {
     String? contactName,
     String? contactNumber,
     String? status,
+    String? category,
+    String? remarks,
     DateTime? createdAt,
   }) {
     return PaymentRequest(
@@ -69,6 +79,8 @@ class PaymentRequest {
       contactName: contactName ?? this.contactName,
       contactNumber: contactNumber ?? this.contactNumber,
       status: status ?? this.status,
+      category: category ?? this.category,
+      remarks: remarks ?? this.remarks,
       createdAt: createdAt ?? this.createdAt,
     );
   }

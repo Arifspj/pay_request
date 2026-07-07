@@ -6,6 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../database/database_helper.dart';
 import '../models/payment_request.dart';
 import '../models/favorite.dart';
+import '../models/categories.dart';
 import '../services/share_service.dart';
 import 'scan_qr_screen.dart';
 
@@ -32,12 +33,15 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
   final _picker = ImagePicker();
 
   final _amountController = TextEditingController();
+  final _remarksController = TextEditingController();
   String? _invoicePath;
   List<Favorite> _favorites = [];
+  List<Map<String, dynamic>> _merchantFavorites = [];
   List<Contact> _contacts = [];
   List<Contact> _filteredContacts = [];
   String? _selectedContactName;
   String? _selectedContactNumber;
+  String _selectedCategory = '';
   bool _loadingContacts = false;
   final _contactSearchController = TextEditingController();
 
@@ -57,6 +61,8 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
       _invoicePath = widget.existingRequest!.invoicePath;
       _selectedContactName = widget.existingRequest!.contactName;
       _selectedContactNumber = widget.existingRequest!.contactNumber;
+      _selectedCategory = widget.existingRequest!.category ?? '';
+      _remarksController.text = widget.existingRequest!.remarks ?? '';
     }
 
     _loadFavorites();
@@ -73,13 +79,20 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
   @override
   void dispose() {
     _amountController.dispose();
+    _remarksController.dispose();
     _contactSearchController.dispose();
     super.dispose();
   }
 
   Future<void> _loadFavorites() async {
     final favs = await _db.getFavorites();
-    if (mounted) setState(() => _favorites = favs);
+    final merchantFavs = await _db.getMerchantFavorites();
+    if (mounted) {
+      setState(() {
+        _favorites = favs;
+        _merchantFavorites = merchantFavs;
+      });
+    }
   }
 
   Future<void> _loadContacts() async {
@@ -177,14 +190,49 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
       contactName: _selectedContactName,
       contactNumber: _selectedContactNumber,
       status: 'Shared',
+      category: _selectedCategory.isNotEmpty ? _selectedCategory : null,
+      remarks: _remarksController.text.trim().isNotEmpty
+          ? _remarksController.text.trim()
+          : null,
     );
 
     await _db.insertRequest(request);
+    if (_merchantName.isNotEmpty && _upiId.isNotEmpty) {
+      await _db.upsertMerchantFavorite(_merchantName, _upiId, _selectedCategory);
+    }
 
     try {
       await ShareService.shareOnWhatsApp(request);
-      _showSnackBar('Request shared successfully!');
-      if (mounted) Navigator.pop(context, true);
+      if (!mounted) return;
+      final scanAgain = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Shared Successfully'),
+          content: const Text('What would you like to do next?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Stay Here'),
+            ),
+            FilledButton.icon(
+              onPressed: () => Navigator.pop(ctx, true),
+              icon: const Icon(Icons.qr_code_scanner),
+              label: const Text('Scan Again'),
+            ),
+          ],
+        ),
+      );
+      if (mounted) {
+        if (scanAgain == true) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const ScanQRScreen()),
+          );
+        } else {
+          Navigator.pop(context, true);
+        }
+      }
     } catch (e) {
       _showSnackBar('Failed to share: $e');
     }
@@ -223,9 +271,19 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
         children: [
           // Merchant Info
           _buildMerchantCard(theme),
+          if (_merchantFavorites.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _buildMerchantFavorites(theme),
+          ],
           const SizedBox(height: 24),
           // Amount
           _buildAmountSection(theme),
+          const SizedBox(height: 24),
+          // Category
+          _buildCategorySection(theme),
+          const SizedBox(height: 24),
+          // Remarks
+          _buildRemarksSection(theme),
           const SizedBox(height: 24),
           // Invoice
           _buildInvoiceSection(theme),
@@ -380,6 +438,77 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
     );
   }
 
+  Widget _buildCategorySection(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'CATEGORY',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.05,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _selectedCategory.isEmpty ? null : _selectedCategory,
+              hint: Text('Select category',
+                  style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
+              isExpanded: true,
+              items: expenseCategories.map((cat) {
+                return DropdownMenuItem(value: cat, child: Text(cat));
+              }).toList(),
+              onChanged: (val) => setState(() => _selectedCategory = val ?? ''),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRemarksSection(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'REMARKS (optional)',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.05,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _remarksController,
+          maxLines: 2,
+          maxLength: 200,
+          decoration: InputDecoration(
+            hintText: 'Add a note...',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
+            counterText: '',
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildInvoiceSection(ThemeData theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -486,6 +615,30 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildMerchantFavorites(ThemeData theme) {
+    return SizedBox(
+      height: 36,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: _merchantFavorites.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (ctx, i) {
+          final fav = _merchantFavorites[i];
+          final name = fav['name'] as String;
+          final upi = fav['upi_id'] as String;
+          return ActionChip(
+            avatar: const Icon(Icons.store, size: 16),
+            label: Text(name, style: const TextStyle(fontSize: 13)),
+            onPressed: () => setState(() {
+              _merchantName = name;
+              _upiId = upi;
+            }),
+          );
+        },
       ),
     );
   }

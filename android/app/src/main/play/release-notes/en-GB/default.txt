@@ -1,0 +1,11 @@
+• Added expense category (Shopping, Grocery, Fuel, Medical, Food, Office, Courier, Recharge, Other)
+• Added optional remarks field for payment requests
+• Added favourite merchants list — tap to auto-fill merchant name & UPI
+• Added search bar to filter payment history
+• Added CSV export in Settings
+• Enhanced WhatsApp message with category, remarks, and payment link
+• Added payment status badges: Paid (green), Cancelled (red)
+• Added invoice preview — tap the receipt icon on any request card
+• Added "Scan Again" option after sharing a request
+• Improved empty state with illustration and Scan QR button
+• Performance improvements and bug fixes

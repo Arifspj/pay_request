@@ -1,0 +1,30 @@
+Pay Request makes it easy to send and collect UPI payments from anyone. Whether you're a small business owner, freelancer, or just splitting bills with friends, Pay Request simplifies the entire process.
+
+HOW IT WORKS
+1. Scan any UPI QR code to auto-fill merchant details
+2. Enter the amount and optionally attach an invoice/receipt image
+3. Select a contact from favorites or your phone book
+4. Share the payment request directly via WhatsApp — message + QR code included
+
+KEY FEATURES
+• UPI QR Scanner — Scan any UPI-compatible QR code to instantly capture merchant name and UPI ID
+• Payment Requests — Create requests with amount, invoice attachment, and contact details
+• WhatsApp Integration — Share requests directly to any WhatsApp contact with pre-filled payment message
+• QR Code Generation — Every request includes a scannable QR code for quick UPI payments
+• Favorites — Save frequently-used contacts for one-tap access
+• Payment History — Track all your requests with status indicators (Pending, Shared, Completed)
+• Export History — Export all transactions as a text file for record-keeping
+• Dark Mode — Comfortable viewing in any lighting condition
+• Invoice Attachment — Capture or pick images to attach to payment requests
+• No Account Required — Works immediately, no sign-up needed
+
+PERFECT FOR
+• Small business owners collecting payments
+• Freelancers sending invoices
+• Friends splitting group expenses
+• Landlords collecting rent
+• Anyone who needs to request UPI payments
+
+Privacy-first: All data stays on your device. No accounts, no cloud sync, no tracking.
+
+Note: Requires WhatsApp to be installed for direct sharing. Camera permission needed for QR scanning. Contact permission needed for accessing phone book.

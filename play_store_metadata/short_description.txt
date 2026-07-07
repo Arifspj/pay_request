@@ -1,0 +1,1 @@
+Send & receive UPI payment requests instantly via WhatsApp. Scan QR, add amount, share.

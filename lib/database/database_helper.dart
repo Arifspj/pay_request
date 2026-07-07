@@ -22,8 +22,9 @@ class DatabaseHelper {
     final path = join(dir.path, 'pay_request.db');
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
   }
 
@@ -38,6 +39,8 @@ class DatabaseHelper {
         contact_name TEXT,
         contact_number TEXT,
         status TEXT NOT NULL DEFAULT 'Pending',
+        category TEXT DEFAULT '',
+        remarks TEXT DEFAULT '',
         created_at TEXT NOT NULL
       )
     ''');
@@ -52,11 +55,39 @@ class DatabaseHelper {
     ''');
 
     await db.execute('''
+      CREATE TABLE merchant_favorites (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        upi_id TEXT NOT NULL,
+        category TEXT DEFAULT '',
+        usage_count INTEGER DEFAULT 1,
+        last_used_at TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
       CREATE TABLE settings (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
       )
     ''');
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('ALTER TABLE requests ADD COLUMN category TEXT DEFAULT ""');
+      await db.execute('ALTER TABLE requests ADD COLUMN remarks TEXT DEFAULT ""');
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS merchant_favorites (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          upi_id TEXT NOT NULL,
+          category TEXT DEFAULT '',
+          usage_count INTEGER DEFAULT 1,
+          last_used_at TEXT NOT NULL
+        )
+      ''');
+    }
   }
 
   // --- Requests ---
@@ -105,6 +136,51 @@ class DatabaseHelper {
   Future<int> deleteFavorite(int id) async {
     final db = await database;
     return await db.delete('favorites', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // --- Merchant Favorites ---
+  Future<int> upsertMerchantFavorite(String name, String upiId, String category) async {
+    final db = await database;
+    final existing = await db.query(
+      'merchant_favorites',
+      where: 'upi_id = ?',
+      whereArgs: [upiId],
+    );
+    if (existing.isNotEmpty) {
+      final fav = existing.first;
+      final count = (fav['usage_count'] as int) + 1;
+      await db.update(
+        'merchant_favorites',
+        {
+          'usage_count': count,
+          'last_used_at': DateTime.now().toIso8601String(),
+          'category': category,
+        },
+        where: 'id = ?',
+        whereArgs: [fav['id']],
+      );
+      return fav['id'] as int;
+    }
+    return await db.insert('merchant_favorites', {
+      'name': name,
+      'upi_id': upiId,
+      'category': category,
+      'usage_count': 1,
+      'last_used_at': DateTime.now().toIso8601String(),
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> getMerchantFavorites() async {
+    final db = await database;
+    return await db.query(
+      'merchant_favorites',
+      orderBy: 'usage_count DESC, last_used_at DESC',
+    );
+  }
+
+  Future<int> deleteMerchantFavorite(int id) async {
+    final db = await database;
+    return await db.delete('merchant_favorites', where: 'id = ?', whereArgs: [id]);
   }
 
   // --- Settings ---

@@ -27,6 +27,12 @@ class ShareService {
     if (request.amount > 0) {
       sb.writeln('💵 Amount: \u{20B9}${request.amount.toStringAsFixed(0)}');
     }
+    if (request.category != null && request.category!.isNotEmpty) {
+      sb.writeln('📂 Category: ${request.category}');
+    }
+    if (request.remarks != null && request.remarks!.isNotEmpty) {
+      sb.writeln('📝 Remarks: ${request.remarks}');
+    }
     sb.writeln('🆔 UPI ID: *${request.upiId}*');
     return sb.toString();
   }
@@ -83,7 +89,7 @@ class ShareService {
 
       if (qrFile != null) {
         try {
-          const channel = MethodChannel('com.payrequest/share');
+          const channel = MethodChannel('pay.request/share');
           await channel.invokeMethod('shareToWhatsApp', {
             'phone': cleaned,
             'text': message,

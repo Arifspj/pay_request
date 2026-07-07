@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../database/database_helper.dart';
 import '../models/payment_request.dart';
@@ -17,6 +18,19 @@ class _HomeScreenState extends State<HomeScreen> {
   List<PaymentRequest> _requests = [];
   bool _loading = true;
   bool _showAllRequests = false;
+  bool _showSearch = false;
+  final _searchController = TextEditingController();
+
+  List<PaymentRequest> get _filteredRequests {
+    if (_searchController.text.trim().isEmpty) return _requests;
+    final q = _searchController.text.trim().toLowerCase();
+    return _requests.where((r) {
+      return r.merchantName.toLowerCase().contains(q) ||
+          r.status.toLowerCase().contains(q) ||
+          (r.category?.toLowerCase().contains(q) ?? false) ||
+          r.amount.toString().contains(q);
+    }).toList();
+  }
 
   @override
   void initState() {
@@ -35,6 +49,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
@@ -45,6 +65,13 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         title: const Text('Pay Request'),
         actions: [
+          IconButton(
+            icon: Icon(_showSearch ? Icons.close : Icons.search),
+            onPressed: () => setState(() {
+              _showSearch = !_showSearch;
+              if (!_showSearch) _searchController.clear();
+            }),
+          ),
           IconButton(
             icon: const Icon(Icons.account_circle),
             onPressed: () {},
@@ -58,6 +85,8 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
             children: [
               const SizedBox(height: 16),
+              if (_showSearch) _buildSearchBar(theme),
+              if (_showSearch) const SizedBox(height: 16),
               _buildHeroBanner(theme),
               const SizedBox(height: 32),
               _buildRecentRequests(theme),
@@ -152,8 +181,82 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildSearchBar(ThemeData theme) {
+    return TextField(
+      controller: _searchController,
+      onChanged: (_) => setState(() {}),
+      decoration: InputDecoration(
+        hintText: 'Search by merchant, status, category, amount...',
+        prefixIcon: const Icon(Icons.search),
+        suffixIcon: _searchController.text.isNotEmpty
+            ? IconButton(
+                icon: const Icon(Icons.clear),
+                onPressed: () {
+                  _searchController.clear();
+                  setState(() {});
+                },
+              )
+            : null,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+      ),
+    );
+  }
+
+  Widget _buildInvoicePreviewButton(PaymentRequest request, ThemeData theme) {
+    return GestureDetector(
+      onTap: () => _showInvoicePreview(request),
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: theme.colorScheme.primaryContainer.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(
+          Icons.receipt,
+          size: 18,
+          color: theme.colorScheme.onPrimaryContainer,
+        ),
+      ),
+    );
+  }
+
+  void _showInvoicePreview(PaymentRequest request) {
+    final path = request.invoicePath;
+    if (path == null || path.isEmpty) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Align(
+              alignment: Alignment.topRight,
+              child: IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.pop(ctx),
+              ),
+            ),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.file(
+                File(path),
+                fit: BoxFit.contain,
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildRecentRequests(ThemeData theme) {
-    final displayCount = _showAllRequests ? _requests.length : (_requests.length > 3 ? 3 : _requests.length);
+    final list = _filteredRequests;
+    final displayCount = _showAllRequests ? list.length : (list.length > 3 ? 3 : list.length);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -168,7 +271,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: theme.colorScheme.onSurface,
               ),
             ),
-            if (!_showAllRequests && _requests.length > 3)
+            if (!_showAllRequests && list.length > 3)
               TextButton(
                 onPressed: () => setState(() => _showAllRequests = true),
                 child: Text(
@@ -191,12 +294,12 @@ class _HomeScreenState extends State<HomeScreen> {
               child: CircularProgressIndicator(),
             ),
           )
-        else if (_requests.isEmpty)
+        else if (list.isEmpty)
           _buildEmptyState(theme)
         else
           ...List.generate(
             displayCount,
-            (i) => _buildRequestCard(theme, _requests[i]),
+            (i) => _buildRequestCard(theme, list[i]),
           ),
       ],
     );
@@ -204,22 +307,41 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildEmptyState(ThemeData theme) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 32),
+      padding: const EdgeInsets.symmetric(vertical: 48),
       alignment: Alignment.center,
       child: Column(
         children: [
           Icon(
             Icons.receipt_long_outlined,
-            size: 40,
-            color: theme.colorScheme.outline,
+            size: 64,
+            color: theme.colorScheme.outline.withValues(alpha: 0.4),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No Payment Requests Yet',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
-            'No requests yet',
+            'Tap Scan QR to create your first request.',
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
-              color: theme.colorScheme.onSurfaceVariant,
+              color: theme.colorScheme.outline,
             ),
+          ),
+          const SizedBox(height: 24),
+          FilledButton.icon(
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ScanQRScreen()),
+            ),
+            icon: const Icon(Icons.qr_code_scanner),
+            label: const Text('Scan QR'),
           ),
         ],
       ),
@@ -227,17 +349,25 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildRequestCard(ThemeData theme, PaymentRequest request) {
-    final statusColor = request.status == 'Completed'
-        ? AppTheme.secondaryFixedDim
-        : request.status == 'Shared'
-            ? theme.colorScheme.secondary
-            : AppTheme.amber;
-
-    final statusBg = request.status == 'Completed'
-        ? AppTheme.secondaryFixedDim.withValues(alpha: 0.1)
-        : request.status == 'Shared'
-            ? theme.colorScheme.secondary.withValues(alpha: 0.1)
-            : AppTheme.amber.withValues(alpha: 0.1);
+    Color statusColor;
+    Color statusBg;
+    switch (request.status) {
+      case 'Paid':
+        statusColor = const Color(0xFF16A34A);
+        statusBg = const Color(0xFF16A34A).withValues(alpha: 0.1);
+        break;
+      case 'Shared':
+        statusColor = theme.colorScheme.secondary;
+        statusBg = theme.colorScheme.secondary.withValues(alpha: 0.1);
+        break;
+      case 'Cancelled':
+        statusColor = const Color(0xFFDC2626);
+        statusBg = const Color(0xFFDC2626).withValues(alpha: 0.1);
+        break;
+      default:
+        statusColor = AppTheme.amber;
+        statusBg = AppTheme.amber.withValues(alpha: 0.1);
+    }
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -265,6 +395,10 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Row(
               children: [
                 _buildMerchantIcon(request.merchantName, theme),
+                if (request.invoicePath != null && request.invoicePath!.isNotEmpty) ...[
+                  const SizedBox(width: 4),
+                  _buildInvoicePreviewButton(request, theme),
+                ],
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(

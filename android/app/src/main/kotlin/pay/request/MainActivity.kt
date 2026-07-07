@@ -1,4 +1,4 @@
-package com.payrequest.pay_request
+package pay.request
 
 import android.content.Intent
 import android.net.Uri
@@ -9,7 +9,7 @@ import io.flutter.plugin.common.MethodChannel
 import java.io.File
 
 class MainActivity : FlutterActivity() {
-    private val CHANNEL = "com.payrequest/share"
+    private val CHANNEL = "pay.request/share"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)

@@ -2,8 +2,15 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart';
 import '../database/database_helper.dart';
 import '../services/theme_provider.dart';
+
+const _appVersion = '1.0.0';
+const _playStoreUrl = 'https://play.google.com/store/apps/details?id=pay.request';
+const _privacyUrl = 'https://pay-request.app/privacy';
+const _termsUrl = 'https://pay-request.app/terms';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -64,6 +71,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<void> _exportCsv() async {
+    final requests = await _db.getRequests(limit: 1000);
+    final buffer = StringBuffer();
+    buffer.writeln('Merchant,UPI ID,Amount,Category,Remarks,Contact Name,Contact Number,Status,Created At');
+    for (final req in requests) {
+      final cat = req.category ?? '';
+      final rem = (req.remarks ?? '').replaceAll(',', ';');
+      final name = (req.contactName ?? '').replaceAll(',', ';');
+      final mobile = req.contactNumber ?? '';
+      buffer.writeln(
+        '${req.merchantName},${req.upiId},${req.amount},$cat,$rem,$name,$mobile,${req.status},${req.createdAt.toIso8601String()}',
+      );
+    }
+    final dir = await getApplicationDocumentsDirectory();
+    final file = File('${dir.path}/payment_export_${DateTime.now().millisecondsSinceEpoch}.csv');
+    await file.writeAsString(buffer.toString());
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('CSV exported to ${file.path}')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -76,21 +107,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          // Dark Mode
+          _sectionHeader(theme, 'Preferences'),
+          const SizedBox(height: 8),
           _buildSettingCard(
             theme: theme,
             icon: Icons.dark_mode,
             title: 'Dark Mode',
             trailing: Switch(
               value: themeProvider.themeMode == ThemeMode.dark,
-              onChanged: (val) {
-                themeProvider.toggleTheme(val);
-              },
+              onChanged: (val) => themeProvider.toggleTheme(val),
               activeThumbColor: theme.colorScheme.primary,
             ),
           ),
           const SizedBox(height: 8),
-          // Default Share App
           _buildSettingCard(
             theme: theme,
             icon: Icons.share,
@@ -99,27 +128,112 @@ class _SettingsScreenState extends State<SettingsScreen> {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => _showShareAppPicker(),
           ),
+          const SizedBox(height: 24),
+          _sectionHeader(theme, 'Data'),
           const SizedBox(height: 8),
-          // Export History
           _buildSettingCard(
             theme: theme,
             icon: Icons.download,
-            title: 'Export History',
+            title: 'Export as TXT',
             subtitle: 'Export all requests as text file',
             trailing: const Icon(Icons.chevron_right),
             onTap: _exportHistory,
           ),
           const SizedBox(height: 8),
-          // About
+          _buildSettingCard(
+            theme: theme,
+            icon: Icons.table_chart,
+            title: 'Export as CSV',
+            subtitle: 'Export all requests as CSV file',
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _exportCsv,
+          ),
+          const SizedBox(height: 24),
+          _sectionHeader(theme, 'Support'),
+          const SizedBox(height: 8),
+          _buildSettingCard(
+            theme: theme,
+            icon: Icons.star,
+            title: 'Rate the App',
+            subtitle: 'Love it? Leave a review on Play Store',
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _rateApp,
+          ),
+          const SizedBox(height: 8),
+          _buildSettingCard(
+            theme: theme,
+            icon: Icons.share,
+            title: 'Share the App',
+            subtitle: 'Tell your friends about Pay Request',
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _shareApp,
+          ),
+          const SizedBox(height: 24),
+          _sectionHeader(theme, 'Legal'),
+          const SizedBox(height: 8),
+          _buildSettingCard(
+            theme: theme,
+            icon: Icons.privacy_tip,
+            title: 'Privacy Policy',
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _openPrivacyPolicy,
+          ),
+          const SizedBox(height: 8),
+          _buildSettingCard(
+            theme: theme,
+            icon: Icons.description,
+            title: 'Terms & Conditions',
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _openTerms,
+          ),
+          const SizedBox(height: 24),
+          _sectionHeader(theme, 'About'),
+          const SizedBox(height: 8),
           _buildSettingCard(
             theme: theme,
             icon: Icons.info_outline,
-            title: 'About',
-            subtitle: 'Version 1.0.0',
+            title: 'About Pay Request',
+            subtitle: 'Version $_appVersion',
             trailing: const Icon(Icons.chevron_right),
             onTap: () => _showAbout(),
           ),
+          const SizedBox(height: 32),
+          Center(
+            child: Text(
+              'Pay Request v$_appVersion',
+              style: TextStyle(
+                fontSize: 12,
+                color: theme.colorScheme.outline,
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Center(
+            child: Text(
+              'Made with ❤ in India',
+              style: TextStyle(
+                fontSize: 12,
+                color: theme.colorScheme.outline,
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
         ],
+      ),
+    );
+  }
+
+  Widget _sectionHeader(ThemeData theme, String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.05,
+          color: theme.colorScheme.primary,
+        ),
       ),
     );
   }
@@ -173,8 +287,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ],
                 ),
               ),
-              trailing ??
-                  const Icon(Icons.chevron_right),
+              trailing ?? const Icon(Icons.chevron_right),
             ],
           ),
         ),
@@ -196,56 +309,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               padding: EdgeInsets.all(16),
               child: Text(
                 'Default Share App',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
               ),
             ),
-            ListTile(
-              leading: const Icon(Icons.chat),
-              title: const Text('WhatsApp'),
-              trailing: _defaultShareApp == 'WhatsApp'
-                  ? const Icon(Icons.check, color: Colors.green)
-                  : null,
-              onTap: () {
-                _setDefaultShareApp('WhatsApp');
-                Navigator.pop(ctx);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.telegram),
-              title: const Text('Telegram'),
-              trailing: _defaultShareApp == 'Telegram'
-                  ? const Icon(Icons.check, color: Colors.green)
-                  : null,
-              onTap: () {
-                _setDefaultShareApp('Telegram');
-                Navigator.pop(ctx);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.mail),
-              title: const Text('Email'),
-              trailing: _defaultShareApp == 'Email'
-                  ? const Icon(Icons.check, color: Colors.green)
-                  : null,
-              onTap: () {
-                _setDefaultShareApp('Email');
-                Navigator.pop(ctx);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.share),
-              title: const Text('System Share Sheet'),
-              trailing: _defaultShareApp == 'System'
-                  ? const Icon(Icons.check, color: Colors.green)
-                  : null,
-              onTap: () {
-                _setDefaultShareApp('System');
-                Navigator.pop(ctx);
-              },
-            ),
+            _pickerTile(ctx, Icons.chat, 'WhatsApp'),
+            _pickerTile(ctx, Icons.telegram, 'Telegram'),
+            _pickerTile(ctx, Icons.mail, 'Email'),
+            _pickerTile(ctx, Icons.share, 'System Share Sheet', 'System'),
             const SizedBox(height: 8),
           ],
         ),
@@ -253,29 +323,71 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _pickerTile(BuildContext ctx, IconData icon, String label, [String? value]) {
+    final v = value ?? label;
+    return ListTile(
+      leading: Icon(icon),
+      title: Text(label),
+      trailing: _defaultShareApp == v
+          ? const Icon(Icons.check, color: Colors.green)
+          : null,
+      onTap: () {
+        _setDefaultShareApp(v);
+        Navigator.pop(ctx);
+      },
+    );
+  }
+
+  Future<void> _rateApp() async {
+    final uri = Uri.parse(_playStoreUrl);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Future<void> _shareApp() async {
+    await Share.share(
+      'Check out Pay Request — the easiest way to send UPI payment requests!\n$_playStoreUrl',
+      subject: 'Pay Request App',
+    );
+  }
+
+  Future<void> _openPrivacyPolicy() async {
+    final uri = Uri.parse(_privacyUrl);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Future<void> _openTerms() async {
+    final uri = Uri.parse(_termsUrl);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
   void _showAbout() {
-    showDialog(
+    showAboutDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Payment Request App'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Version: 1.0.0'),
-            SizedBox(height: 8),
-            Text('A simple app to create and share UPI payment requests via WhatsApp.'),
-            SizedBox(height: 8),
-            Text('Made with Flutter'),
-          ],
+      applicationName: 'Pay Request',
+      applicationVersion: _appVersion,
+      applicationLegalese: '© ${DateTime.now().year} Pay Request',
+      children: [
+        const SizedBox(height: 16),
+        const Text(
+          'A simple app to create and share UPI payment requests via WhatsApp. '
+          'Scan any UPI QR code, create payment requests with optional invoice attachments, '
+          'and share them instantly.',
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('OK'),
+        const SizedBox(height: 16),
+        Text(
+          'Made with Flutter',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.primary,
+            fontWeight: FontWeight.w500,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

@@ -12,7 +12,7 @@ class PaymentRequestApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
+      builder: (context, themeProvider, _) {
         return MaterialApp(
           title: 'Pay Request',
           debugShowCheckedModeBanner: false,
