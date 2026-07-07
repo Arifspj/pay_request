@@ -450,6 +450,11 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
   }
 
   Widget _buildCategorySection(ThemeData theme) {
+    final selectedCat = expenseCategories.firstWhere(
+      (c) => c.name == _selectedCategory,
+      orElse: () => expenseCategories.last,
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -463,26 +468,136 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            border: Border.all(color: theme.colorScheme.outlineVariant),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: _selectedCategory.isEmpty ? null : _selectedCategory,
-              hint: Text('Select category',
-                  style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
-              isExpanded: true,
-              items: expenseCategories.map((cat) {
-                return DropdownMenuItem(value: cat, child: Text(cat));
-              }).toList(),
-              onChanged: (val) => setState(() => _selectedCategory = val ?? ''),
+        InkWell(
+          onTap: () => _showCategorySheet(theme),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              border: Border.all(color: theme.colorScheme.outlineVariant),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  _selectedCategory.isEmpty
+                      ? Icons.category_outlined
+                      : selectedCat.icon,
+                  color: _selectedCategory.isEmpty
+                      ? theme.colorScheme.outline
+                      : selectedCat.color,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _selectedCategory.isEmpty ? 'Select category' : _selectedCategory,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: _selectedCategory.isEmpty
+                          ? theme.colorScheme.onSurfaceVariant
+                          : theme.colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                Icon(Icons.keyboard_arrow_down, color: theme.colorScheme.outline),
+              ],
             ),
           ),
         ),
       ],
+    );
+  }
+
+  void _showCategorySheet(ThemeData theme) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Select Category',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Flexible(
+                child: GridView.builder(
+                  shrinkWrap: true,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    mainAxisSpacing: 16,
+                    crossAxisSpacing: 16,
+                    childAspectRatio: 1,
+                  ),
+                  itemCount: expenseCategories.length,
+                  itemBuilder: (context, index) {
+                    final cat = expenseCategories[index];
+                    final isSelected = _selectedCategory == cat.name;
+                    return InkWell(
+                      onTap: () {
+                        setState(() => _selectedCategory = cat.name);
+                        Navigator.pop(context);
+                      },
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? cat.color.withOpacity(0.1)
+                              : theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isSelected ? cat.color : Colors.transparent,
+                            width: 2,
+                          ),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              cat.icon,
+                              color: isSelected ? cat.color : theme.colorScheme.onSurfaceVariant,
+                              size: 32,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              cat.name,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                color: isSelected ? cat.color : theme.colorScheme.onSurface,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
     );
   }
 

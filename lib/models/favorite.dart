@@ -3,12 +3,14 @@ class Favorite {
   final String name;
   final String mobile;
   final String? photo;
+  final bool isStarred;
 
   Favorite({
     this.id,
     required this.name,
     required this.mobile,
     this.photo,
+    this.isStarred = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -17,6 +19,7 @@ class Favorite {
       'name': name,
       'mobile': mobile,
       'photo': photo ?? '',
+      'is_starred': isStarred ? 1 : 0,
     };
   }
 
@@ -26,6 +29,7 @@ class Favorite {
       name: map['name'] as String,
       mobile: map['mobile'] as String,
       photo: map['photo'] as String?,
+      isStarred: (map['is_starred'] as int? ?? 0) == 1,
     );
   }
 }

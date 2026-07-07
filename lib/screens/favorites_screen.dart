@@ -92,6 +92,18 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     );
   }
 
+  Future<void> _toggleStar(Favorite fav) async {
+    final updated = Favorite(
+      id: fav.id,
+      name: fav.name,
+      mobile: fav.mobile,
+      photo: fav.photo,
+      isStarred: !fav.isStarred,
+    );
+    await _db.updateFavorite(updated);
+    _loadFavorites();
+  }
+
   void _showSnackBar(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -102,13 +114,14 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final starredCount = _favorites.where((f) => f.isStarred).length;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Favorites'),
       ),
       body: Column(
         children: [
-          _buildFavoritesStats(theme),
+          _buildFavoritesStats(theme, starredCount),
           Expanded(
             child: _favorites.isEmpty
                 ? Center(
@@ -158,7 +171,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     );
   }
 
-  Widget _buildFavoritesStats(ThemeData theme) {
+  Widget _buildFavoritesStats(ThemeData theme, int starredCount) {
     return Container(
       margin: const EdgeInsets.all(20),
       padding: const EdgeInsets.all(20),
@@ -184,7 +197,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             width: 1,
             color: theme.colorScheme.outlineVariant,
           ),
-          _statCol(theme, 'Starred', '0', Icons.star),
+          _statCol(theme, 'Starred', starredCount.toString(), Icons.star),
         ],
       ),
     );
@@ -269,6 +282,13 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       ),
                     ],
                   ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    fav.isStarred ? Icons.star : Icons.star_border,
+                    color: fav.isStarred ? Colors.amber : theme.colorScheme.outline,
+                  ),
+                  onPressed: () => _toggleStar(fav),
                 ),
                 const Icon(Icons.chevron_right),
               ],

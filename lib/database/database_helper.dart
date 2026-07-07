@@ -22,7 +22,7 @@ class DatabaseHelper {
     final path = join(dir.path, 'pay_request.db');
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -50,7 +50,8 @@ class DatabaseHelper {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         mobile TEXT NOT NULL,
-        photo TEXT
+        photo TEXT,
+        is_starred INTEGER DEFAULT 0
       )
     ''');
 
@@ -87,6 +88,9 @@ class DatabaseHelper {
           last_used_at TEXT NOT NULL
         )
       ''');
+    }
+    if (oldVersion < 3) {
+      await db.execute('ALTER TABLE favorites ADD COLUMN is_starred INTEGER DEFAULT 0');
     }
   }
 
@@ -136,6 +140,40 @@ class DatabaseHelper {
   Future<int> deleteFavorite(int id) async {
     final db = await database;
     return await db.delete('favorites', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<int> updateFavorite(Favorite favorite) async {
+    final db = await database;
+    return await db.update(
+      'favorites',
+      favorite.toMap(),
+      where: 'id = ?',
+      whereArgs: [favorite.id],
+    );
+  }
+
+  // --- Statistics ---
+  Future<Map<String, dynamic>> getGlobalStats() async {
+    final db = await database;
+    final result = await db.rawQuery('SELECT SUM(amount) as total_amount, COUNT(*) as total_count FROM requests');
+    if (result.isNotEmpty && result.first['total_amount'] != null) {
+      return {
+        'total_amount': (result.first['total_amount'] as num).toDouble(),
+        'total_count': result.first['total_count'] as int,
+      };
+    }
+    return {'total_amount': 0.0, 'total_count': 0};
+  }
+
+  Future<Map<String, double>> getCategoryBreakdown() async {
+    final db = await database;
+    final result = await db.rawQuery('SELECT category, SUM(amount) as total_amount FROM requests GROUP BY category');
+    final Map<String, double> breakdown = {};
+    for (var row in result) {
+      final category = (row['category'] as String?)?.isNotEmpty == true ? row['category'] as String : 'Other';
+      breakdown[category] = (breakdown[category] ?? 0) + (row['total_amount'] as num).toDouble();
+    }
+    return breakdown;
   }
 
   // --- Merchant Favorites ---
