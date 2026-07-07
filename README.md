@@ -17,7 +17,7 @@ A Flutter mobile app to scan UPI QR codes, create payment requests with optional
 
 | Screen | Description |
 |--------|-------------|
-| Home | Hero banner, recent requests, quick actions (Scan QR, Contact, Self, Balance) |
+| Home | Stats card (Total/Paid/Pending), recent requests, quick actions |
 | Favorites | Saved contacts from address book with add/remove support |
 | Settings | Dark mode toggle, default share app picker, export history, about |
 | Scan QR | Camera-based UPI QR code scanner |

@@ -87,7 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 16),
               if (_showSearch) _buildSearchBar(theme),
               if (_showSearch) const SizedBox(height: 16),
-              _buildHeroBanner(theme),
+              _buildStatsCard(theme),
               const SizedBox(height: 32),
               _buildRecentRequests(theme),
               const SizedBox(height: 32),
@@ -101,83 +101,130 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildHeroBanner(ThemeData theme) {
-    return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const ScanQRScreen()),
-      ),
-      child: Container(
-        height: 96,
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x0D0F172A),
-              blurRadius: 12,
-              offset: Offset(0, 4),
-            ),
+  Widget _buildStatsCard(ThemeData theme) {
+    final totalAmount = _requests.fold(0.0, (sum, r) => sum + r.amount);
+    final paidAmount = _requests
+        .where((r) => r.status == 'Paid')
+        .fold(0.0, (sum, r) => sum + r.amount);
+    final pendingAmount = totalAmount - paidAmount;
+    final totalCount = _requests.length;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            theme.colorScheme.primary,
+            theme.colorScheme.primary.withValues(alpha: 0.8),
           ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        child: Stack(
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    theme.colorScheme.primary,
-                    theme.colorScheme.primary.withValues(alpha: 0.6),
-                    const Color(0xFF1E3A5F),
-                  ],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                ),
-              ),
-            ),
-            Positioned(
-              right: -10,
-              top: -10,
-              child: Icon(
-                Icons.qr_code_scanner,
-                size: 100,
-                color: Colors.white.withValues(alpha: 0.1),
-              ),
-            ),
-            const Positioned.fill(
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Padding(
-                  padding: EdgeInsets.only(left: 24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'SECURE PAYMENTS',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.05,
-                          color: Colors.white,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Tap to scan & pay any UPI QR',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Color(0xE6FFFFFF),
-                        ),
-                      ),
-                    ],
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.primary.withValues(alpha: 0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Total Expenses',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white.withValues(alpha: 0.8),
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '₹${totalAmount.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: 28,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
                 ),
+                child: const Icon(
+                  Icons.account_balance_wallet,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              _buildStatItem(
+                'Paid',
+                '₹${paidAmount.toStringAsFixed(0)}',
+                Icons.check_circle_outline,
+              ),
+              const SizedBox(width: 24),
+              _buildStatItem(
+                'Pending',
+                '₹${pendingAmount.toStringAsFixed(0)}',
+                Icons.pending_outlined,
+              ),
+              const SizedBox(width: 24),
+              _buildStatItem(
+                'Requests',
+                totalCount.toString(),
+                Icons.receipt_long,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String label, String value, IconData icon) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 12, color: Colors.white.withValues(alpha: 0.6)),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.white.withValues(alpha: 0.6),
               ),
             ),
           ],
         ),
-      ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 14,
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 
