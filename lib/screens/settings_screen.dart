@@ -3,14 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart';
 import 'legal_screen.dart';
 import '../database/database_helper.dart';
 import '../services/theme_provider.dart';
 
 const _appVersion = '1.0.0';
 const _playStoreUrl = 'https://play.google.com/store/apps/details?id=pay.request';
-const _privacyUrl = 'https://pay-request.app/privacy';
-const _termsUrl = 'https://pay-request.app/terms';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});

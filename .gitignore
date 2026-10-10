@@ -57,6 +57,7 @@ gen_icon.py
 # Build logs
 build_log.txt
 build_release.bat
+build_output.txt
 
 # JVM crash logs
 hs_err_pid*.log

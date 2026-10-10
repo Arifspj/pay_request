@@ -1,7 +1,7 @@
 name: pay_request
 description: "Payment Request App - Send UPI payment requests via WhatsApp"
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.2+3
 
 environment:
   sdk: ^3.10.0
@@ -20,15 +20,27 @@ dependencies:
   provider: ^6.1.2
   flutter_contacts: ^2.1.0
   qr: ^3.0.2
-  image: ^4.8.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.13.1
+  path_provider_platform_interface: ^2.1.2
+
+flutter_launcher_icons:
+  android: "ic_launcher"
+  ios: false
+  image_path: "assets/app_icon.png"
+  adaptive_icon_background: "#004AC6"
+  adaptive_icon_foreground: "assets/app_icon_foreground.png"
+  min_sdk_android: 21
 
 flutter:
   uses-material-design: true
 
   assets:
     - assets/app_icon.png
+    - assets/app_icon_foreground.png
+    - assets/Pay-Using-Any-UPI-App.png.png
+    - assets/upi_logo_icon.png

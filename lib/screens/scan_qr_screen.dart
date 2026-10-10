@@ -87,6 +87,72 @@ class _ScanQRScreenState extends State<ScanQRScreen> {
     _parseUPI(raw);
   }
 
+  void _showManualEntryDialog() {
+    final upiController = TextEditingController();
+    final nameController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Enter Details'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Merchant Name',
+                  hintText: 'e.g. Reliance Fresh',
+                ),
+                validator: (val) => val == null || val.isEmpty ? 'Required' : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: upiController,
+                decoration: const InputDecoration(
+                  labelText: 'UPI ID or Mobile',
+                  hintText: 'e.g. 9876543210@upi or 9876543210',
+                ),
+                validator: (val) {
+                  if (val == null || val.isEmpty) return 'Required';
+                  if (!val.contains('@') && !RegExp(r'^\d{10}$').hasMatch(val)) {
+                    return 'Enter valid UPI ID or 10-digit mobile';
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                String upi = upiController.text.trim();
+                if (!upi.contains('@') && RegExp(r'^\d{10}$').hasMatch(upi)) {
+                  upi = '$upi@paytm'; // Default extension if only mobile is provided
+                }
+                Navigator.pop(ctx);
+                _parseUPI(upi);
+                setState(() {
+                  _merchantName = nameController.text.trim();
+                });
+              }
+            },
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _parseUPI(String raw) {
     String? pa;
     String? pn;
@@ -262,17 +328,36 @@ class _ScanQRScreenState extends State<ScanQRScreen> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        OutlinedButton.icon(
-                          onPressed: _pickFromGallery,
-                          icon: const Icon(Icons.photo_library_outlined, size: 18),
-                          label: const Text('Or pick from gallery'),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 20, vertical: 12),
-                            side: BorderSide(
-                              color: theme.colorScheme.outlineVariant,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: _pickFromGallery,
+                                icon: const Icon(Icons.photo_library_outlined, size: 18),
+                                label: const Text('Gallery'),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  side: BorderSide(
+                                    color: theme.colorScheme.outlineVariant,
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: _showManualEntryDialog,
+                                icon: const Icon(Icons.keyboard_outlined, size: 18),
+                                label: const Text('Type UPI'),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  side: BorderSide(
+                                    color: theme.colorScheme.outlineVariant,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         if (_upiId != null) ...[
                           const SizedBox(height: 16),

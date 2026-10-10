@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../database/database_helper.dart';
 import '../models/payment_request.dart';
+import '../models/categories.dart';
 import 'create_request_screen.dart';
 import 'scan_qr_screen.dart';
 import '../app.dart';
@@ -110,6 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+
   String _formatDate(DateTime date) {
     final months = [
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -117,7 +119,6 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
-}
 
   Widget _buildStatsCard(ThemeData theme) {
     final isDark = theme.brightness == Brightness.dark;
@@ -548,34 +549,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildMerchantIcon(String name, ThemeData theme) {
-    final icon = _merchantIconFor(name);
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Icon(icon, size: 24, color: theme.colorScheme.onSecondaryContainer),
-    );
-  }
-
-  IconData _merchantIconFor(String name) {
-    final map = {
-      'coffee': Icons.shopping_bag,
-      'power': Icons.electric_bolt,
-      'delivery': Icons.restaurant,
-      'store': Icons.store,
-      'medical': Icons.local_hospital,
-      'fuel': Icons.local_gas_station,
-    };
-    return map.entries.firstWhere(
-      (e) => name.toLowerCase().contains(e.key),
-      orElse: () => MapEntry('', Icons.shopping_bag),
-    ).value;
-  }
-
   Widget _buildIllustrationBanner(ThemeData theme) {
     final isDark = theme.brightness == Brightness.dark;
     return GestureDetector(
@@ -797,14 +770,14 @@ class _HomeScreenState extends State<HomeScreen> {
             decoration: BoxDecoration(
               color: fill
                   ? theme.colorScheme.primaryContainer
-                  : theme.colorScheme.primaryContainer,
+                  : theme.colorScheme.surfaceContainerHigh,
               shape: BoxShape.circle,
               boxShadow: fill
-                  ? const [
+                  ? [
                       BoxShadow(
-                        color: Color(0x262563EB),
+                        color: theme.colorScheme.primary.withValues(alpha: 0.2),
                         blurRadius: 8,
-                        offset: Offset(0, 2),
+                        offset: const Offset(0, 2),
                       ),
                     ]
                   : null,
@@ -812,7 +785,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Icon(
               icon,
               size: 24,
-              color: theme.colorScheme.onPrimary,
+              color: theme.colorScheme.onPrimaryContainer,
               fill: fill ? 1.0 : 0.0,
             ),
           ),
@@ -831,11 +804,4 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  String _formatDate(DateTime date) {
-    final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
-  }
 }

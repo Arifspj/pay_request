@@ -8,7 +8,7 @@ import 'settings_screen.dart';
 import 'scan_qr_screen.dart';
 import 'create_request_screen.dart';
 import '../database/database_helper.dart';
-import '../models/payment_request.dart';
+import '../models/categories.dart';
 
 class PaymentRequestApp extends StatelessWidget {
   const PaymentRequestApp({super.key});
@@ -137,8 +137,12 @@ class _MainShellState extends State<MainShell> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  theme.colorScheme.primary,
-                  theme.colorScheme.primary.withValues(alpha: 0.8),
+                  theme.brightness == Brightness.dark
+                      ? theme.colorScheme.primaryContainer
+                      : theme.colorScheme.primary,
+                  theme.brightness == Brightness.dark
+                      ? theme.colorScheme.primaryContainer.withValues(alpha: 0.8)
+                      : theme.colorScheme.primary.withValues(alpha: 0.8),
                 ],
               ),
             ),
