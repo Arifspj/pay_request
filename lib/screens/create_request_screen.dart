@@ -68,6 +68,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
     _loadFavorites();
     _loadContacts();
     _loadLastCategory();
+    _loadLastContact();
     _contactSearchController.addListener(_filterContacts);
 
     if (widget.autoShare && widget.existingRequest != null) {
@@ -103,6 +104,28 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
         _selectedCategory = lastCat;
       });
     }
+  }
+
+  Future<void> _loadLastContact() async {
+    if (_selectedContactName != null) return;
+    final name = await _db.getSetting('last_contact_name');
+    if (name == null || name.isEmpty) return;
+    final number = await _db.getSetting('last_contact_number') ?? '';
+    if (mounted) {
+      setState(() {
+        _selectedContactName = name;
+        _selectedContactNumber = number;
+      });
+    }
+  }
+
+  void _setSelectedContact(String name, String number) {
+    setState(() {
+      _selectedContactName = name;
+      _selectedContactNumber = number;
+    });
+    _db.setSetting('last_contact_name', name);
+    _db.setSetting('last_contact_number', number);
   }
 
   Future<void> _loadContacts() async {
@@ -154,11 +177,10 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
           organizations: [], websites: [], socialMedias: [], events: [],
           relations: [], notes: []),
     );
-    setState(() {
-      _selectedContactName = name;
-      _selectedContactNumber =
-          contact.phones.isNotEmpty ? contact.phones.first.number : '';
-    });
+    _setSelectedContact(
+      name,
+      contact.phones.isNotEmpty ? contact.phones.first.number : '',
+    );
   }
 
   void _scanQRAgain() {
@@ -859,10 +881,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
     final isSelected = _selectedContactName == fav.name;
     return GestureDetector(
       onTap: () {
-        setState(() {
-          _selectedContactName = fav.name;
-          _selectedContactNumber = fav.mobile;
-        });
+        _setSelectedContact(fav.name, fav.mobile);
       },
       child: Container(
         width: 72,
@@ -981,10 +1000,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
             onTap: () {
-              setState(() {
-                _selectedContactName = name;
-                _selectedContactNumber = phone;
-              });
+              _setSelectedContact(name, phone);
             },
             child: Container(
               padding: const EdgeInsets.all(16),

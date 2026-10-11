@@ -1,7 +1,7 @@
 name: pay_request
 description: "Payment Request App - Send UPI payment requests via WhatsApp"
 publish_to: 'none'
-version: 1.0.2+3
+version: 1.0.3+4
 
 environment:
   sdk: ^3.10.0

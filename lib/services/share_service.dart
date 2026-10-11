@@ -265,15 +265,15 @@ class ShareService {
 
       // 4. "Scan & Pay" label
       final scanTp = _tp('Scan & Pay', 30, _slate600, FontWeight.w600, letterSpacing: 2);
-      _paintCentered(canvas, scanTp, brandY + 92);
+      _paintCentered(canvas, scanTp, brandY + 84);
 
       // 5. Amount pill
-      const pillTop = 448.0;
-      const pillH = 110.0;
+      const pillTop = 424.0;
+      const pillH = 172.0;
       final amountLabel = request.amount > 0
           ? '\u{20B9}${request.amount.toStringAsFixed(2)}'
           : 'Enter any amount';
-      final amtTp = _tp(amountLabel, 46, _navy, FontWeight.w800);
+      final amtTp = _tp(amountLabel, request.amount > 0 ? 92 : 64, _navy, FontWeight.w800);
       final pillW = amtTp.width + 140;
       final pillX = centerX - pillW / 2;
       final pillRect = Rect.fromLTWH(pillX, pillTop, pillW, pillH);
@@ -289,13 +289,13 @@ class ShareService {
           ..strokeWidth = 3,
       );
       canvas.drawCircle(
-        Offset(pillX + 52, pillTop + pillH / 2),
-        9,
+        Offset(pillX + 66, pillTop + pillH / 2),
+        13,
         Paint()..color = _emerald,
       );
       amtTp.paint(
         canvas,
-        Offset(pillX + (pillW + 34 - amtTp.width) / 2, pillTop + (pillH - amtTp.height) / 2),
+        Offset(pillX + (pillW + 48 - amtTp.width) / 2, pillTop + (pillH - amtTp.height) / 2),
       );
 
       // 6. QR code with quiet zone
