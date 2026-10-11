@@ -49,6 +49,13 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _openScanner() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ScanQRScreen()),
+    );
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -129,94 +136,97 @@ class _HomeScreenState extends State<HomeScreen> {
     final pendingAmount = totalAmount - paidAmount;
     final totalCount = _requests.length;
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? [const Color(0xFF002A66), const Color(0xFF00174B)]
-              : [
-                  theme.colorScheme.primary,
-                  theme.colorScheme.primary.withValues(alpha: 0.8),
-                ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    return GestureDetector(
+      onTap: _openScanner,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: isDark
+                ? [const Color(0xFF002A66), const Color(0xFF00174B)]
+                : [
+                    theme.colorScheme.primary,
+                    theme.colorScheme.primary.withValues(alpha: 0.8),
+                  ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: (isDark ? Colors.black : theme.colorScheme.primary)
+                  .withValues(alpha: 0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: (isDark ? Colors.black : theme.colorScheme.primary)
-                .withValues(alpha: 0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Total Expenses',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white.withValues(alpha: 0.8),
-                      fontWeight: FontWeight.w500,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Total Expenses',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white.withValues(alpha: 0.8),
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '₹${totalAmount.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      fontSize: 28,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
+                    const SizedBox(height: 4),
+                    Text(
+                      '₹${totalAmount.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 28,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
                   ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  shape: BoxShape.circle,
+                  child: const Icon(
+                    Icons.account_balance_wallet,
+                    color: Colors.white,
+                    size: 24,
+                  ),
                 ),
-                child: const Icon(
-                  Icons.account_balance_wallet,
-                  color: Colors.white,
-                  size: 24,
+              ],
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                _buildStatItem(
+                  'Paid',
+                  '₹${paidAmount.toStringAsFixed(0)}',
+                  Icons.check_circle_outline,
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              _buildStatItem(
-                'Paid',
-                '₹${paidAmount.toStringAsFixed(0)}',
-                Icons.check_circle_outline,
-              ),
-              const SizedBox(width: 24),
-              _buildStatItem(
-                'Pending',
-                '₹${pendingAmount.toStringAsFixed(0)}',
-                Icons.pending_outlined,
-              ),
-              const SizedBox(width: 24),
-              _buildStatItem(
-                'Requests',
-                totalCount.toString(),
-                Icons.receipt_long,
-              ),
-            ],
-          ),
-        ],
+                const SizedBox(width: 24),
+                _buildStatItem(
+                  'Pending',
+                  '₹${pendingAmount.toStringAsFixed(0)}',
+                  Icons.pending_outlined,
+                ),
+                const SizedBox(width: 24),
+                _buildStatItem(
+                  'Requests',
+                  totalCount.toString(),
+                  Icons.receipt_long,
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
